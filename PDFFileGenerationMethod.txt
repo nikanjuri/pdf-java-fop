@@ -1,0 +1,66 @@
+import org.apache.fop.apps.Driver;
+import org.apache.fop.apps.XSLTInputHandler;
+import org.xml.sax.XMLReader;
+
+
+public String generatePdfForSalesInvoiceNew(String xmlFileAbsPath) throws Exception{
+		String fileName="";
+		try{
+			String xslAbsPath = (String)new ConfigurationServiceFacade().getValue("salesInvoiceNewXslPath");
+			String xslPathDir = xslAbsPath.substring(0,xslAbsPath.lastIndexOf("/"));
+			try{            
+				validatePath(xslPathDir);           
+			}catch(Exception exp){
+				throw new Exception("XSL "+exp.getMessage());
+			}
+
+			String xslFileAbsPath = StringHandler.replace(xslAbsPath, "\\", "/");
+			SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd");
+			SimpleDateFormat sdf1 = new SimpleDateFormat("HHmmssSS");
+
+			String pdfFileName = "SalesInvoice"+"_"+sdf.format(new Date())+"_"+sdf1.format(new Date())+".pdf";
+			String pdfPath = (String)new ConfigurationServiceFacade().getValue("salesInvoicePdfPath");  
+			try{
+				validatePath(pdfPath);
+			}catch(Exception exp){
+				throw new Exception("PDF "+exp.getMessage());
+			}
+			pdfPath = StringHandler.replace(pdfPath, "\\", "/");
+			if(!pdfPath.endsWith("/"))
+				pdfPath +="/";
+			String pdfFileAbsPath = pdfPath+ pdfFileName;       
+			fileName = pdfFileAbsPath;
+			generatePdfFile(xmlFileAbsPath,xslFileAbsPath,pdfFileAbsPath);
+		}catch(Exception exp){
+			exp.printStackTrace();
+			throw exp;
+		}
+		return fileName;    
+	}
+
+
+
+
+
+/**
+	 * This method is used to generatePDFfile for a given xmlfile,xslfile and to a given pdffile
+	 * @param xmlfile
+	 * @param xslfile
+	 * @param pdffile
+	 * @throws Exception
+	 */
+	@SuppressWarnings("fallthrough")
+	public void generatePdfFile(String xmlfile, String xslfile, String pdffile) throws Exception {
+		try {
+			Driver driver = new Driver();
+			driver.setRenderer(Driver.RENDER_PDF);
+			XSLTInputHandler inputHandler = new XSLTInputHandler(new File(xmlfile), new File(xslfile));
+
+			XMLReader parser = inputHandler.getParser();                
+			driver.setOutputStream(new FileOutputStream(pdffile));
+			driver.render(parser, inputHandler.getInputSource());
+		} catch(Exception ex) {
+			ex.printStackTrace();               
+			throw new Exception("An Error occurred while generating PDF.");
+		}
+	}  
